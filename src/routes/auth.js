@@ -4,10 +4,19 @@ const { PrismaClient } = require('@prisma/client');
 
 const router = express.Router();
 
-// Create Prisma client instance
-const prisma = new PrismaClient({
-  errorFormat: 'pretty',
-});
+// Lazy-load Prisma client
+let prisma = null;
+
+function getPrisma() {
+  if (!prisma) {
+    console.log('🔄 Initializing Prisma Client...');
+    prisma = new PrismaClient({
+      errorFormat: 'pretty',
+      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    });
+  }
+  return prisma;
+}
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
@@ -19,8 +28,10 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Email, password, and name are required' });
     }
 
+    const db = getPrisma();
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await db.user.findUnique({
       where: { email },
       select: { id: true },
     }).catch(err => {
@@ -36,7 +47,7 @@ router.post('/signup', async (req, res) => {
     const hashedPassword = await hashPassword(password);
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         email,
         password: hashedPassword,
@@ -83,9 +94,21 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
+    const db = getPrisma();
+
     // Find user
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        password: true,
+      },
+    }).catch(err => {
+      console.error('Database error in findUnique:', err);
+      throw err;
     });
 
     if (!user) {
