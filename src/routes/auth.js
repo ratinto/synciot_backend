@@ -1,9 +1,13 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
+const { PrismaClient } = require('@prisma/client');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+
+// Create Prisma client instance
+const prisma = new PrismaClient({
+  errorFormat: 'pretty',
+});
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
@@ -18,6 +22,10 @@ router.post('/signup', async (req, res) => {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
+      select: { id: true },
+    }).catch(err => {
+      console.error('Database error in findUnique:', err);
+      throw err;
     });
 
     if (existingUser) {
@@ -35,6 +43,15 @@ router.post('/signup', async (req, res) => {
         name,
         role: 'operator', // Default role
       },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+      },
+    }).catch(err => {
+      console.error('Database error in create:', err);
+      throw err;
     });
 
     // Generate token
@@ -51,8 +68,8 @@ router.post('/signup', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Signup error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
@@ -96,8 +113,8 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
