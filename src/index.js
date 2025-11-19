@@ -2,6 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+const roverRoutes = require('./routes/rover');
+const sensorLogsRoutes = require('./routes/sensorLogs');
+const dashboardRoutes = require('./routes/dashboard');
+const alertsRoutes = require('./routes/alerts');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,6 +26,10 @@ app.use(cors({
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/rover', roverRoutes);
+app.use('/api/sensor-logs', sensorLogsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/alerts', alertsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

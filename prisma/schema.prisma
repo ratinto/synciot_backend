@@ -21,3 +21,71 @@ model User {
 
   @@map("users")
 }
+
+model Rover {
+  id             Int             @id @default(autoincrement())
+  name           String
+  status         String          @default("offline") // online, offline, error
+  battery        Int             @default(0) // 0-100 percentage
+  lastSeen       DateTime        @default(now())
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  sensorLogs     SensorLog[]
+  commands       RoverCommand[]
+  alerts         Alert[]
+
+  @@map("rovers")
+}
+
+model SensorLog {
+  id             Int             @id @default(autoincrement())
+  roverId        Int
+  rover          Rover           @relation(fields: [roverId], references: [id], onDelete: Cascade)
+  
+  temperature    Float           // in Celsius
+  humidity       Float           // in percentage
+  distance       Float           // in meters
+  battery        Int             // 0-100 percentage
+  signalStrength Int             // signal strength -100 to 0 (dBm)
+  
+  createdAt      DateTime        @default(now())
+
+  @@index([roverId])
+  @@index([createdAt])
+  @@map("sensor_logs")
+}
+
+model RoverCommand {
+  id             Int             @id @default(autoincrement())
+  roverId        Int
+  rover          Rover           @relation(fields: [roverId], references: [id], onDelete: Cascade)
+  
+  command        String          // forward, backward, left, right, stop
+  status         String          @default("pending") // pending, executing, completed, failed
+  
+  createdAt      DateTime        @default(now())
+  executedAt     DateTime?
+
+  @@index([roverId])
+  @@index([createdAt])
+  @@map("rover_commands")
+}
+
+model Alert {
+  id             Int             @id @default(autoincrement())
+  roverId        Int
+  rover          Rover           @relation(fields: [roverId], references: [id], onDelete: Cascade)
+  
+  type           String          // low_battery, obstacle_detected, connection_lost, high_temperature
+  severity       String          @default("info") // info, warning, critical
+  message        String
+  isResolved     Boolean         @default(false)
+  
+  createdAt      DateTime        @default(now())
+  resolvedAt     DateTime?
+
+  @@index([roverId])
+  @@index([createdAt])
+  @@map("alerts")
+}
