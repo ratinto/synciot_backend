@@ -1,3 +1,1 @@
-import app from '../../src/index.js';
-
-export default app;
+module.exports = require('../src/index.js');
