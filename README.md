@@ -117,6 +117,7 @@ curl -X POST http://localhost:5000/api/auth/signup \
   -d '{"email":"test@example.com","password":"pass123","name":"Test User"}'
 ```
 
+
 **Login:**
 ```bash
 curl -X POST http://localhost:5000/api/auth/login \
