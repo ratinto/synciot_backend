@@ -42,6 +42,109 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== SENSOR ROUTES (nested under robots) ====================
+// NOTE: These MUST come BEFORE /:id routes to avoid route conflicts
+
+// @route   GET /api/robots/:robotId/sensors
+// @desc    Get all sensors for a specific robot
+// @access  Protected
+router.get('/:robotId/sensors', authenticateToken, async (req, res) => {
+  try {
+    const { robotId } = req.params;
+
+    // Check if robot exists
+    const robot = await getPrisma().robot.findUnique({
+      where: { id: parseInt(robotId) }
+    });
+
+    if (!robot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Robot not found'
+      });
+    }
+
+    const sensors = await getPrisma().sensor.findMany({
+      where: { robotId: parseInt(robotId) },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: sensors
+    });
+  } catch (error) {
+    console.error('Error fetching sensors:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sensors',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/robots/:robotId/sensors
+// @desc    Add sensor to robot
+// @access  Protected
+router.post('/:robotId/sensors', authenticateToken, async (req, res) => {
+  try {
+    const { robotId } = req.params;
+    const { name, type, value, unit } = req.body;
+
+    console.log('Adding sensor to robot:', robotId);
+    console.log('Sensor data:', { name, type, value, unit });
+
+    // Validation
+    if (!name || !type || value === undefined || !unit) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, type, value, and unit are required'
+      });
+    }
+
+    // Check if robot exists
+    const robot = await getPrisma().robot.findUnique({
+      where: { id: parseInt(robotId) }
+    });
+
+    if (!robot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Robot not found'
+      });
+    }
+
+    const sensor = await getPrisma().sensor.create({
+      data: {
+        robotId: parseInt(robotId),
+        name,
+        type,
+        value: parseFloat(value),
+        unit
+      }
+    });
+
+    console.log('Sensor created:', sensor);
+
+    res.status(201).json({
+      success: true,
+      message: 'Sensor added successfully',
+      data: sensor
+    });
+  } catch (error) {
+    console.error('Error adding sensor:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add sensor',
+      error: error.message
+    });
+  }
+});
+
+// ==================== ROBOT ROUTES ====================
+
 // @route   GET /api/robots/:id
 // @desc    Get single robot with its sensors
 // @access  Protected
