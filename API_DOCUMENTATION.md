@@ -454,7 +454,7 @@ Delete sensor from robot.
 - `status` - "online", "offline", "error"
 - `battery` - 0-100 percentage
 - `lastSeen` - Last activity timestamp
-
+t
 ### Sensor
 - `id` - Auto increment ID
 - `robotId` - Foreign key to Robot
