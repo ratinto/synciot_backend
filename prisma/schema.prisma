@@ -11,19 +11,24 @@ datasource db {
 }
 
 model User {
-  id        Int     @id @default(autoincrement())
-  email     String  @unique
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
   password  String
   name      String
-  role      String  @default("operator")
+  role      String   @default("operator")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  robots    Robot[]  // User owns multiple robots
 
   @@map("users")
 }
 
 model Robot {
   id             Int             @id @default(autoincrement())
+  userId         Int?            // Robot belongs to a user (optional for existing data)
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
   name           String
   status         String          @default("offline") // online, offline, error
   battery        Int             @default(0) // 0-100 percentage
@@ -33,6 +38,7 @@ model Robot {
 
   sensors        Sensor[]
 
+  @@index([userId])
   @@map("robots")
 }
 
