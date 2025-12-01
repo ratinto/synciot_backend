@@ -13,7 +13,25 @@ function getPrisma() {
     prisma = new PrismaClient({
       errorFormat: 'pretty',
       log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL
+        }
+      }
     });
+    
+    // Add connection retry logic
+    prisma.$connect()
+      .then(() => console.log('✅ Database connected'))
+      .catch((err) => {
+        console.error('❌ Database connection failed:', err.message);
+        // Retry after 2 seconds
+        setTimeout(() => {
+          prisma.$connect()
+            .then(() => console.log('✅ Database reconnected'))
+            .catch(() => console.error('❌ Database reconnection failed'));
+        }, 2000);
+      });
   }
   return prisma;
 }

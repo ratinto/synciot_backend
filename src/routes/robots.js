@@ -7,7 +7,27 @@ let prisma;
 const getPrisma = () => {
   if (!prisma) {
     const { PrismaClient } = require('@prisma/client');
-    prisma = new PrismaClient();
+    prisma = new PrismaClient({
+      errorFormat: 'pretty',
+      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL
+        }
+      }
+    });
+    
+    // Add connection retry logic
+    prisma.$connect()
+      .then(() => console.log('✅ Robots DB connected'))
+      .catch((err) => {
+        console.error('❌ Robots DB connection failed:', err.message);
+        setTimeout(() => {
+          prisma.$connect()
+            .then(() => console.log('✅ Robots DB reconnected'))
+            .catch(() => console.error('❌ Robots DB reconnection failed'));
+        }, 2000);
+      });
   }
   return prisma;
 };
