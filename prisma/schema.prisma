@@ -15,7 +15,7 @@ model User {
   email     String  @unique
   password  String
   name      String
-  role      String  @default("operator") // operator or admin
+  role      String  @default("operator")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

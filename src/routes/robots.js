@@ -143,6 +143,109 @@ router.post('/:robotId/sensors', authenticateToken, async (req, res) => {
   }
 });
 
+// @route   POST /api/robots/:robotId/sensors/bulk
+// @desc    Bulk update/create sensors for a robot (for ESP32/IoT devices)
+// @access  Protected
+router.post('/:robotId/sensors/bulk', authenticateToken, async (req, res) => {
+  try {
+    const { robotId } = req.params;
+    const { sensors } = req.body;
+
+    console.log('Bulk sensor update for robot:', robotId);
+    console.log('Sensor count:', sensors?.length);
+
+    // Validation
+    if (!sensors || !Array.isArray(sensors) || sensors.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sensors array is required and must not be empty'
+      });
+    }
+
+    // Check if robot exists
+    const robot = await getPrisma().robot.findUnique({
+      where: { id: parseInt(robotId) }
+    });
+
+    if (!robot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Robot not found'
+      });
+    }
+
+    // Process each sensor
+    const results = [];
+    for (const sensorData of sensors) {
+      const { name, type, value, unit } = sensorData;
+
+      // Validate each sensor
+      if (!name || !type || value === undefined || !unit) {
+        console.warn('Skipping invalid sensor:', sensorData);
+        continue;
+      }
+
+      // Check if sensor already exists for this robot
+      const existingSensor = await getPrisma().sensor.findFirst({
+        where: {
+          robotId: parseInt(robotId),
+          name: name,
+          type: type
+        }
+      });
+
+      if (existingSensor) {
+        // Update existing sensor
+        const updated = await getPrisma().sensor.update({
+          where: { id: existingSensor.id },
+          data: {
+            value: parseFloat(value),
+            unit: unit,
+            updatedAt: new Date()
+          }
+        });
+        results.push({ action: 'updated', sensor: updated });
+        console.log('Updated sensor:', name);
+      } else {
+        // Create new sensor
+        const created = await getPrisma().sensor.create({
+          data: {
+            robotId: parseInt(robotId),
+            name,
+            type,
+            value: parseFloat(value),
+            unit
+          }
+        });
+        results.push({ action: 'created', sensor: created });
+        console.log('Created sensor:', name);
+      }
+    }
+
+    // Update robot's lastSeen timestamp
+    await getPrisma().robot.update({
+      where: { id: parseInt(robotId) },
+      data: { lastSeen: new Date() }
+    });
+
+    console.log('Bulk update complete. Processed:', results.length, 'sensors');
+
+    res.status(200).json({
+      success: true,
+      message: 'Sensors updated successfully',
+      count: results.length,
+      data: results
+    });
+  } catch (error) {
+    console.error('Error in bulk sensor update:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update sensors',
+      error: error.message
+    });
+  }
+});
+
 // ==================== ROBOT ROUTES ====================
 
 // @route   GET /api/robots/:id
