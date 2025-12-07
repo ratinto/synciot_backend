@@ -4,6 +4,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const robotRoutes = require('./routes/robots');
 const sensorRoutes = require('./routes/sensors');
+const { startOfflineChecker } = require('./services/offlineChecker');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -55,6 +56,9 @@ const server = app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV}`);
   console.log(`🗄️  Database: ${process.env.DATABASE_URL.split('@')[1]?.split('/')[0] || 'PostgreSQL'}`);
+  
+  // Start offline robot checker service
+  startOfflineChecker();
 }).on('error', (err) => {
   console.error('❌ Server error:', err.message);
   if (err.code === 'EADDRINUSE') {

@@ -242,10 +242,29 @@ router.post('/:robotId/sensors/bulk', authenticateToken, async (req, res) => {
       }
     }
 
-    // Update robot's lastSeen timestamp
+    // Extract battery value if present
+    let batteryValue = null;
+    const batterySensor = sensors.find(s => s.type === 'battery');
+    if (batterySensor && batterySensor.value !== undefined) {
+      batteryValue = Math.round(parseFloat(batterySensor.value));
+      // Ensure battery is between 0-100
+      batteryValue = Math.max(0, Math.min(100, batteryValue));
+    }
+
+    // Update robot's lastSeen timestamp, status, and battery
+    const updateData = {
+      lastSeen: new Date(),
+      status: 'online' // Mark as online when receiving data
+    };
+    
+    // Only update battery if we have a battery sensor value
+    if (batteryValue !== null) {
+      updateData.battery = batteryValue;
+    }
+
     await getPrisma().robot.update({
       where: { id: parseInt(robotId) },
-      data: { lastSeen: new Date() }
+      data: updateData
     });
 
     console.log('Bulk update complete. Processed:', results.length, 'sensors');
