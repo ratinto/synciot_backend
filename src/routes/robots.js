@@ -48,9 +48,19 @@ router.get('/', authenticateToken, async (req, res) => {
       }
     });
 
+    // Calculate online/offline status dynamically based on lastSeen
+    const thirtySecondsAgo = new Date(Date.now() - 30000);
+    const robotsWithStatus = robots.map(robot => {
+      const isOnline = robot.lastSeen && new Date(robot.lastSeen) > thirtySecondsAgo;
+      return {
+        ...robot,
+        status: isOnline ? 'online' : 'offline'
+      };
+    });
+
     res.json({
       success: true,
-      data: robots
+      data: robotsWithStatus
     });
   } catch (error) {
     console.error('Error fetching robots:', error);
@@ -312,9 +322,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
 
+    // Calculate online/offline status dynamically based on lastSeen
+    const thirtySecondsAgo = new Date(Date.now() - 30000);
+    const isOnline = robot.lastSeen && new Date(robot.lastSeen) > thirtySecondsAgo;
+    
+    const robotWithStatus = {
+      ...robot,
+      status: isOnline ? 'online' : 'offline'
+    };
+
     res.json({
       success: true,
-      data: robot
+      data: robotWithStatus
     });
   } catch (error) {
     console.error('Error fetching robot:', error);
